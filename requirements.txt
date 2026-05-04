@@ -1,4 +1,7 @@
-llama-index
-llama-index-llms-openai
-llama-index-embeddings-openai
-pypdf
+langchain
+langchain-openai
+langchain-core
+pydantic
+requests
+pandas
+python-dotenv
