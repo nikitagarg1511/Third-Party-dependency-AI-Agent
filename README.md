@@ -1,21 +1,21 @@
-# PDF RAG Chat
+# Autonomous Supply Chain Security Agent
 
-A Retrieval-Augmented Generation (RAG) chatbot for querying PDF documents using Streamlit, LlamaIndex, and OpenAI.
+A Python-based autonomous agent that analyzes a CSV package list, checks license compliance, validates vulnerabilities using Sonatype OSS Index, and saves a structured results CSV.
 
 ## Features
 
-- **PDF Document Indexing**: Automatically index PDF documents from a specified directory
-- **Intelligent Querying**: Ask questions about your documents and get accurate answers
-- **Source Attribution**: View the exact source text, file name, and page number for each answer
-- **Streamlit Interface**: User-friendly web interface for easy interaction
-- **Structured Responses**: Responses include answer, explanation, and metadata in JSON format
+- **Autonomous analysis** of package inventories using a LangChain/OpenAI agent
+- **License compliance checks** for PyPI, NPM, and Go packages
+- **Vulnerability validation** with Sonatype OSS Index
+- **Policy enforcement** for CVSS score and allowed licenses
+- **CSV tool support** for reading columns, previewing rows, and exporting results
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/pdf-rag-chat.git
-   cd pdf-rag-chat
+   git clone https://github.com/your-username/third-party-dependency-agent.git
+   cd Third-Party-dependency-AI-Agent
    ```
 
 2. Install dependencies:
@@ -23,96 +23,102 @@ A Retrieval-Augmented Generation (RAG) chatbot for querying PDF documents using 
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables:
-   Create a `.env` file in the root directory with your OpenAI API key:
-   ```
+3. Create a `.env` file in the project root with your credentials:
+   ```ini
    OPENAI_API_KEY=your_openai_api_key_here
+   SONATYPE_USER=your_sonatype_username
+   SONATYPE_TOKEN=your_sonatype_token
    ```
 
 ## Usage
 
-### 1. Index Your Documents
+### Run the main agent
 
-Place your PDF files in the `data/` directory, then run the indexing script:
-
-```bash
-python indexing.py
-```
-
-This will process all PDFs, create text chunks, and build a vector index stored in the `storage/` directory.
-
-### 2. Run the Chat Application
-
-Start the Streamlit app:
+The primary entrypoint is `agent.py`.
 
 ```bash
-streamlit run app.py
+python agent.py
 ```
 
-Open your browser to the provided URL (usually `http://localhost:8501`) and start asking questions about your documents.
+This script uses `input.csv` by default and writes results to `output_results.csv`.
 
-### 3. Query from Command Line (Optional)
+### Inspect or test individual tools
 
-You can also use the query system directly:
-
-```bash
-python query.py
-```
-
-Type your questions and get JSON responses. Type "exit" to quit.
+- `tools.py` defines the helper tools used by the agent
+- `schemas.py` defines input schemas for tool validation
+- `config.py` loads API credentials from `.env`
+- `index.py` contains a standalone license lookup helper
+- `hello.py` contains a second agent example and prompt template
 
 ## Configuration
 
-- **DATA_PATH**: Directory containing PDF files (default: `data/`)
-- **STORAGE_PATH**: Directory for storing the vector index (default: `storage/`)
-- **LLM Model**: Currently configured to use GPT-4o-mini (can be changed in `query.py`)
-- **Chunk Settings**: Chunk size and overlap can be adjusted in `indexing.py`
+- `OPENAI_API_KEY` — OpenAI API key for `ChatOpenAI`
+- `SONATYPE_USER` — Sonatype OSS Index username
+- `SONATYPE_TOKEN` — Sonatype OSS Index API token
 
-## How It Works
+## Project Workflow
 
-1. **Document Loading**: PDFs are loaded and parsed using PyMuPDF
-2. **Text Chunking**: Documents are split into manageable chunks using sentence-aware splitting
-3. **Embedding Creation**: Text chunks are converted to vector embeddings using OpenAI's embedding model
-4. **Index Building**: A vector store index is created for efficient similarity search
-5. **Query Processing**: User questions are embedded and matched against the index
-6. **Response Generation**: Relevant context is passed to the LLM to generate accurate answers
+1. `agent.py` builds a LangChain agent using `ChatOpenAI` and custom tools.
+2. The system prompt enforces policy rules for license and vulnerability decisions.
+3. `tools.py` provides:
+   - `list_csv_columns` to inspect CSV headers
+   - `get_csv_rows` to preview CSV data
+   - `check_license` to resolve package licenses
+   - `check_vulnerabilities` to query Sonatype OSS Index
+   - `save_results_to_csv` to write final JSON output to CSV
+4. The agent processes each package row and saves the results.
+
+## Input / Output
+
+- `input.csv` should contain package rows with `repo_name`, `artifact_name`, and `version` fields.
+- `output_results.csv` is created by the agent and contains fields such as:
+  - `repo_name`
+  - `artifact_name`
+  - `version`
+  - `license`
+  - `cvss_score`
+  - `status`
+  - `recommendation`
+
+## Policy Rules
+
+- Allowed licenses: `MIT`, `Apache-2.0`, `BSD-3-Clause`, `PSF-2.0`, `ISC`
+- Packages with CVSS >= 9.0 are marked as `REJECTED - Security`
+- Disallowed licenses are marked as `REJECTED - License`
+- Sonatype API errors result in `ERROR - Check Logs` and a CVSS score of `0.0`
+
+## Requirements
+
+- Python 3.10+
+- `langchain`
+- `langchain-openai`
+- `langchain-core`
+- `pydantic`
+- `requests`
+- `pandas`
+- `python-dotenv`
 
 ## Project Structure
 
-```
-├── app.py              # Streamlit web application
-├── config.py           # Configuration settings
-├── embedding.py        # Embedding utilities (incomplete)
-├── indexing.py         # Document indexing script
-├── models.py           # Pydantic response models
-├── query.py            # Query engine and CLI interface
+```text
+├── agent.py            # Main agent runner and prompt policy
+├── config.py           # Environment configuration and API credentials
+├── hello.py            # Alternate agent example with the same security workflow
+├── index.py            # Standalone license lookup utility
+├── schemas.py          # Tool input schemas for LangChain tools
+├── tools.py            # Tool implementations used by the agent
+├── input.csv           # Sample package inventory input
+├── output_results.csv  # Generated analysis output file
 ├── requirements.txt    # Python dependencies
 ├── README.md           # This file
-├── LICENSE             # MIT License
-├── data/               # Directory for PDF documents
-└── storage/            # Directory for vector index storage
+└── .gitignore          # Ignored project files
 ```
 
-## Dependencies
+## Notes
 
-- **llama-index**: Core RAG framework
-- **llama-index-llms-openai**: OpenAI LLM integration
-- **llama-index-embeddings-openai**: OpenAI embeddings
-- **pypdf**: PDF processing (via PyMuPDF)
-- **streamlit**: Web interface
-- **python-dotenv**: Environment variable management
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+- Keep `.env` private and never commit credentials to source control.
+- The agent is designed to make one tool call per package and to avoid retries on fatal Sonatype errors.
 
 ## Support
 
-If you encounter any issues or have questions, please open an issue on GitHub.
+If you need help running the project, check your `.env` configuration and ensure your OpenAI and Sonatype credentials are valid.

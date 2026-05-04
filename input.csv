@@ -1,0 +1,4 @@
+﻿repo_name,artifact_name,version
+npm,react,18.2.0
+pypi,PyYAML,5.4
+pypi,mysql-connector-python,9.6.0

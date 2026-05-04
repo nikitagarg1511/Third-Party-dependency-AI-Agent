@@ -1,0 +1,4 @@
+repo_name,artifact_name,version,license,cvss_score,status,recommendation
+npm,react,18.2.0,MIT,0.0,APPROVED,None
+pypi,PyYAML,5.4,MIT,0.0,APPROVED,None
+pypi,mysql-connector-python,9.6.0,GNU GPLv2 (with FOSS License Exception),0.0,REJECTED - License,Blocked due to License
